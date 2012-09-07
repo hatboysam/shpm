@@ -7,8 +7,9 @@ It's like todo.txt, but I made it in Haskell and it's much simpler
 You probably shouldn't, but I like it
 
 ### How do I use it?
-shpm list -> list all tasks
-shpm add "Some Task" -> add "Some Task" to the bottom of the list
+shpm list -> list all tasks by project
+shpm add "Some Task" -> add "Some Task" to project "Other"
+shpm add "Some Project" "Some Task" -> add "Some Task" to the project "Some Project", creating the project if necessary
 shpm remove -> list all tasks and choose one to remove
 shpm remove n -> remove task #n from the list
 
