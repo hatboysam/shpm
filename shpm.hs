@@ -5,6 +5,10 @@ import System.Environment
 import System.Directory
 import Data.List
 
+--A Simple Haskell Project Manager
+--By: Sam Stern (2012)
+
+main :: IO ()
 main = do
 	args <- getArgs
 	dispatch args

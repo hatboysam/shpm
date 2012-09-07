@@ -1,3 +1,4 @@
 *.txt
 *.o
 *.hi
+.DS_STORE
