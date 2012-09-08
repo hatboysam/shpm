@@ -5,6 +5,7 @@ import System.Environment
 import System.Directory
 import System.Console.ANSI
 import Data.List
+import Data.Ord
 
 --A Simple Haskell Project Manager
 --By: Sam Stern (2012)
@@ -123,7 +124,7 @@ getProjects :: IO [Project]
 getProjects = do
 	fileContents <- (readFile "shpm.txt") `E.catch` (\e -> const (return "") (e :: E.IOException))
 	let allLines = lines fileContents
-	return $ parseFile allLines
+	return $ sortProjects (parseFile allLines)
 
 parseFile :: [String] -> [Project]
 parseFile l = parseFile' l []
@@ -137,8 +138,19 @@ parseFile' (x:xs) l
 	where addTaskTo (name, tasks) x = (name, tasks ++ [x])
 
 flattenProjects :: [Project] -> [String]
-flattenProjects projects = map (\(name, tasks) -> name ++ "\n" ++ (flattenTasks tasks)) $ clearBlanks projects
+flattenProjects projects = map (\(name, tasks) -> name ++ "\n" ++ (flattenTasks tasks)) $ sortProjects (clearBlanks projects)
 	where flattenTasks tasks = foldl (\a b -> a ++ "\n" ++ b) "" tasks
+
+sortProjects :: [Project] -> [Project]
+sortProjects projects = sortBy compareProjects projects
+
+compareProjects :: Project -> Project -> Ordering
+compareProjects (name1,_) (name2,_)
+	| name1 == "*Other" = GT
+	| name2 == "*Other" = LT
+	| name1 > name2 = GT
+	| name1 < name2 = LT
+	| otherwise = EQ
 
 clearBlanks :: [Project] -> [Project]
 clearBlanks [] = []
