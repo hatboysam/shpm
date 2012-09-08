@@ -3,6 +3,7 @@ import qualified Control.Exception as E
 import System.IO
 import System.Environment
 import System.Directory
+import System.Console.ANSI
 import Data.List
 
 --A Simple Haskell Project Manager
@@ -22,7 +23,7 @@ dispatch :: [String] -> IO ()
 dispatch (command:args)
 	| (command == "add") = add args
 	| (command == "remove") = remove args
-	| (command == "list") = list
+	| (command == "list") = list args
 	| otherwise = unknownCommand command
 
 dispatch _ = do
@@ -54,7 +55,7 @@ addToProject' ((name,tasks):xs) pname task
 
 remove :: [String] -> IO ()
 remove [] = do
-	list
+	list ["-nc"]
 	putStrLn "Which # do you want to remove?"
 	toRemove <- getLine
 	remove [toRemove]
@@ -73,30 +74,45 @@ removeTask (x:xs) num
 	| otherwise = x:(removeTask xs (num - numTasks x))
 	where deleteTask num (name,tasks) = (name, (delete (tasks !! num) tasks)) 
 
-list :: IO ()
-list = do
+list :: [String] -> IO ()
+list (option:_) = do
+	let useColor = (option /= "-nc")
 	projects <- getProjects
-	printProjects projects
+	printProjects projects useColor
+list [] = do
+	projects <- getProjects
+	printProjects projects True
 
-printProjects :: [Project] -> IO ()
-printProjects projects = printProjects' projects 0
+printProjects :: [Project] -> Bool -> IO ()
+printProjects projects color = printProjects' projects color 0
 
-printProjects' :: [Project] -> Int -> IO ()
-printProjects' [] _ = do
+printProjects' :: [Project] -> Bool -> Int -> IO ()
+printProjects' [] _ _ = do
 	return ()
-printProjects' (x:xs) num = do
-	printProject x num
-	printProjects' xs (num + (numTasks x))
+printProjects' (x:xs) color num = do
+	printProject x num color
+	printProjects' xs color (num + (numTasks x))
 
 numTasks :: Project -> Int
 numTasks (name, tasks) = length tasks
 
-printProject :: Project -> Int -> IO ()
-printProject (name, tasks) num = do
-	putStrLn $ (tail name) ++ ":"
+printProject :: Project -> Int -> Bool -> IO ()
+printProject (name, tasks) num colors = do
+	let prettyName = (tail name) ++ ":"
 	let numberedTasks = zipWith (\num t -> (show num) ++ " - " ++ t) [num..] tasks
 	let tabbedTasks = map (\t -> "  " ++ t) numberedTasks
-	mapM_ putStrLn tabbedTasks
+	if (colors)
+		then putStrLnColor Red prettyName
+		else putStrLn prettyName
+	if (colors)
+		then mapM_ (putStrLnColor Yellow) tabbedTasks
+		else mapM_ putStrLn tabbedTasks
+
+putStrLnColor :: Color -> String -> IO ()
+putStrLnColor c s = do
+	setSGR [ SetColor Foreground Vivid c ]
+	putStrLn s
+	setSGR [ Reset ]
 
 getAllLines :: IO [String]
 getAllLines = do
@@ -143,3 +159,4 @@ addToFile task = do
 unknownCommand :: String -> IO ()
 unknownCommand n = do
 	putStrLn $ "Unknown command: " ++ n
+
