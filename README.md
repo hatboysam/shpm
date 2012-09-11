@@ -10,7 +10,7 @@ You probably shouldn't if you're a power user, but if you're a simple-case user 
 I've uploaded both the Haskell source as well as an executable.  The easiest way is just to add the 'shpm' file to your PATH.  If you want to compile the Haskell yourself, you'll first need to install the ANSI Terminal module by running 'sudo cabal install ansi-terminal'.  The ANSI Terminal module provides color support, for more information on the module visit the <a href="http://batterseapower.github.com/ansi-terminal/">homepage</a>.
 
 ### Where are my tasks stored?
-In the directory where you install shpm, the program creates a file called shpm.txt which stores everything.  This is a very important file, so don't move it around or delete it.  It's all stored in perfectly readable plaintext, so if you want to edit your list without using SHPM just be consistent with the format used by the program and everything should work smoothly.
+In the directory identified by your system as the User App Data Directory, the program creates a file called shpm.txt which stores everything.  On a UNIX system this will be "$HOME/.shpm/shpm.txt".  This is a very important file, so don't move it around or delete it.  It's all stored in perfectly readable plaintext, so if you want to edit your list without using SHPM just be consistent with the format used by the program and everything should work smoothly.
 
 ### How do I use it?
 shpm list -> list all tasks by project (in color)

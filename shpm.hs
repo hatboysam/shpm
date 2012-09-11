@@ -12,6 +12,7 @@ import Data.Ord
 
 main :: IO ()
 main = do
+	makeFileIfNecessary
 	args <- getArgs
 	dispatch args
 	
@@ -117,12 +118,14 @@ putStrLnColor c s = do
 
 getAllLines :: IO [String]
 getAllLines = do
-	fileContents <- (readFile "shpm.txt") `E.catch` (\e -> const (return "") (e :: E.IOException))
+	filePath <- textPath
+	fileContents <- (readFile filePath) `E.catch` (\e -> const (return "") (e :: E.IOException))
 	return $ lines fileContents
 
 getProjects :: IO [Project]
 getProjects = do
-	fileContents <- (readFile "shpm.txt") `E.catch` (\e -> const (return "") (e :: E.IOException))
+	filePath <- textPath	
+	fileContents <- (readFile filePath) `E.catch` (\e -> const (return "") (e :: E.IOException))
 	let allLines = lines fileContents
 	return $ sortProjects (parseFile allLines)
 
@@ -138,7 +141,8 @@ parseFile' (x:xs) l
 	where addTaskTo (name, tasks) x = (name, tasks ++ [x])
 
 flattenProjects :: [Project] -> [String]
-flattenProjects projects = map (\(name, tasks) -> name ++ "\n" ++ (flattenTasks tasks)) $ sortProjects (clearBlanks projects)
+--TODO For some reason, I didn't have to add a newline after name, not sure why...
+flattenProjects projects = map (\(name, tasks) -> name ++ (flattenTasks tasks)) $ sortProjects (clearBlanks projects)
 	where flattenTasks tasks = foldl (\a b -> a ++ "\n" ++ b) "" tasks
 
 sortProjects :: [Project] -> [Project]
@@ -160,13 +164,24 @@ clearBlanks (x:xs)
 
 replaceFile :: [String] -> IO ()
 replaceFile newTasks = do
-	--TODO sort projects alphabetically
-	removeFile "shpm.txt" `E.catch` (\e -> const (return ()) (e :: E.IOException))
+	filePath <- textPath
+	removeFile filePath `E.catch` (\e -> const (return ()) (e :: E.IOException))
 	mapM_ addToFile newTasks
 
 addToFile :: String -> IO ()
 addToFile task = do
-	appendFile "shpm.txt" $ task ++ "\n"
+	filePath <- textPath
+	appendFile filePath $ task ++ "\n"
+
+textPath :: IO FilePath
+textPath = do
+	appDir <- getAppUserDataDirectory "shpm"
+	return $ appDir ++ "/shpm.txt"
+
+makeFileIfNecessary :: IO ()
+makeFileIfNecessary = do
+	appDir <- getAppUserDataDirectory "shpm"
+	createDirectoryIfMissing True appDir
 
 unknownCommand :: String -> IO ()
 unknownCommand n = do
