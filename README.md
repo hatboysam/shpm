@@ -25,5 +25,9 @@ shpm remove -> list all tasks and choose one to remove
 
 shpm remove n -> remove task #n from the list
 
+shpm loc -> show the location of the shpm.txt file
+
+shpm help -> show the commands list
+
 ### Is that all?
 Yep, for now.  I want to add a few more features but I still want to be true to the "S" in SHPM.  Stay tuned.

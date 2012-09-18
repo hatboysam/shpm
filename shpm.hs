@@ -26,6 +26,8 @@ dispatch (command:args)
 	| (command == "add") = add args
 	| (command == "remove") = remove args
 	| (command == "list") = list args
+	| (command == "loc") = loc
+	| (command == "help") = help
 	| otherwise = unknownCommand command
 
 dispatch _ = do
@@ -84,6 +86,30 @@ list (option:_) = do
 list [] = do
 	projects <- getProjects
 	printProjects projects True
+
+loc :: IO ()
+loc = do
+	path <- textPath
+	putStrLn path
+
+help :: IO ()
+help = do
+	putStrLn "-----------------------------"
+	putStrLn " *****  *    *  ****   *   * "
+	putStrLn " *      *    *  *   *  ** ** "
+	putStrLn " *****  ******  ****   * * * "
+	putStrLn "     *  *    *  *      *   * "
+	putStrLn " *****  *    *  *      *   * "
+	putStrLn "-----------------------------"
+	putStrLn "add {task} -> add task to project Other"
+	putStrLn "add {proj} {task} -> add task to project proj"
+	putStrLn "list -> list all tasks (in color)"
+	putStrLn "list -nc -> list all tasks (no color)"
+	putStrLn "remove -> list all tasks and choose one to remove"
+	putStrLn "remove {n} -> remove task #n from the list"
+	putStrLn "loc -> show location of tasks file"
+	putStrLn "help -> show this menu"
+	putStrLn ""
 
 printProjects :: [Project] -> Bool -> IO ()
 printProjects projects color = printProjects' projects color 0
