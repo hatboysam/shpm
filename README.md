@@ -21,7 +21,7 @@ shpm add "Some Task" -> add "Some Task" to project "Other"
 
 shpm add "Some Project" "Some Task" -> add "Some Task" to the project "Some Project", creating the project if necessary
 
-shpm pri n -> Prioritize task #n (prints in different color)
+shpm pri n -> prioritize task #n (prints in different color)
 
 shpm addp -> same options/arguments as 'add', but prioritized the new task
 

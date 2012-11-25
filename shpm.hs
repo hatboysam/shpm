@@ -141,6 +141,8 @@ help = do
 	putStrLn "-----------------------------"
 	putStrLn "add {task} -> add task to project Other"
 	putStrLn "add {proj} {task} -> add task to project proj"
+	putStrLn "pri {n} -> prioritize task #n (prints in different color)"
+	putStrLn "addp -> same arguments/options as add, prioritizes new task"
 	putStrLn "list -> list all tasks (in color)"
 	putStrLn "list -nc -> list all tasks (no color)"
 	putStrLn "remove -> list all tasks and choose one to remove"
