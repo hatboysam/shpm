@@ -17,17 +17,19 @@ main = do
 	dispatch args
 	
 --For ease of reading
-type Task = String
+type Task = (String, Bool)
 type ProjName = String
 type Project = (ProjName, [Task])
 
 dispatch :: [String] -> IO ()
 dispatch (command:args)
 	| (command == "add") = add args
+	| (command == "addp") = addp args
 	| (command == "remove") = remove args
 	| (command == "list") = list args
 	| (command == "loc") = loc
 	| (command == "help") = help
+	| (command == "pri") = pri args
 	| otherwise = unknownCommand command
 
 dispatch _ = do
@@ -35,14 +37,24 @@ dispatch _ = do
 
 add :: [String] -> IO ()
 add (task:[]) = do
-	addToProject "*Other" task
+	addToProject "*Other" (task, False)
 	putStrLn $ "Added: " ++ task
 add (pname:task:[]) = do
-	addToProject ("*" ++ pname) task
+	addToProject ("*" ++ pname) (task, False)
 	putStrLn $ "Added: " ++ task
 add [] = do
 	putStrLn "Can't add a blank task"
 add _ = do
+	putStrLn "Incorrect # of arguments"
+
+addp :: [String] -> IO ()
+addp (task:[]) = do
+	add ['^':task]
+addp (pname:task:[]) = do
+	add (pname:('^':task):[])
+addp [] = do
+	add []
+addp _ = do
 	putStrLn "Incorrect # of arguments"
 
 addToProject :: ProjName -> Task -> IO ()
@@ -67,16 +79,29 @@ remove (toRemove:_) = do
 	--TODO catch read error
 	let toRemoveNum = read toRemove :: Int
 	projects <- getProjects
-	let maxNum = foldl (\a b -> a + (numTasks b)) 0 projects
+	let maxNum = maxTaskNum projects
 	if (toRemoveNum >= maxNum || toRemoveNum < 0)
 		then putStrLn $ "Out of bounds: " ++ toRemove
 		else replaceFile (flattenProjects $ removeTask projects toRemoveNum)
+
+maxTaskNum :: [Project] -> Int
+maxTaskNum projects = foldl (\a b -> a + (numTasks b)) 0 projects
 
 removeTask :: [Project] -> Int -> [Project]
 removeTask (x:xs) num
 	| num < numTasks x = (deleteTask num x):xs
 	| otherwise = x:(removeTask xs (num - numTasks x))
 	where deleteTask num (name,tasks) = (name, (delete (tasks !! num) tasks)) 
+
+priTask :: [Project] -> Int -> [Project]
+priTask (x:xs) num
+	| num < numTasks x = (fst x, (priTask' num (snd x))):xs
+	| otherwise = x:(priTask xs (num - numTasks x))
+
+priTask' :: Int -> [Task] -> [Task]
+priTask' num (task:xs)
+	| (num /= 0) = task:(priTask' (num - 1) xs)
+	| otherwise = (fst task, True):xs 
 
 list :: [String] -> IO ()
 list (option:_) = do
@@ -91,6 +116,19 @@ loc :: IO ()
 loc = do
 	path <- textPath
 	putStrLn path
+
+pri :: [String] -> IO ()
+pri (number:_) = do
+	let toPriNum = read number :: Int
+	projects <- getProjects
+	let maxNum = maxTaskNum projects
+	if (toPriNum >= maxNum || toPriNum < 0)
+		then putStrLn $ "Out of bounds: " ++ number
+		else do
+			replaceFile (flattenProjects $ priTask projects toPriNum)
+			putStrLn $ "Prioritized task #" ++ number
+pri _ = do
+	putStrLn "Error, must speciffy a number" 
 
 help :: IO ()
 help = do
@@ -127,18 +165,30 @@ numTasks (name, tasks) = length tasks
 printProject :: Project -> Int -> Bool -> IO ()
 printProject (name, tasks) num colors = do
 	let prettyName = (tail name) ++ ":"
-	let numberedTasks = zipWith (\num t -> (show num) ++ " - " ++ t) [num..] tasks
-	let tabbedTasks = map (\t -> "  " ++ t) numberedTasks
+	let numberedTasks = zipWith (\num t -> ((show num) ++ " - " ++ (cutCarat t), snd t)) [num..] $ tasks
+	let tabbedTasks = map (\t -> (("  " ++ fst t), snd t)) numberedTasks
 	if (colors)
 		then putStrLnColor Red prettyName
 		else putStrLn prettyName
 	if (colors)
-		then mapM_ (putStrLnColor Yellow) tabbedTasks
-		else mapM_ putStrLn tabbedTasks
+		then mapM_ (printTaskColor) tabbedTasks
+		else mapM_ putStrLn $ firsts tabbedTasks
+	where 
+		cutCarat (string, False) = string -- Removes the "^" from pri tasks
+		cutCarat (string, True) = (tail string)
+
+printTaskColor :: Task -> IO ()
+printTaskColor task = do
+	if (snd task)
+		then putStrLnColor Green $ fst task 
+		else putStrLnColor Yellow $ fst task
+
+firsts :: [(a,b)] -> [a]
+firsts list = map (\(a,b) -> a) list
 
 putStrLnColor :: Color -> String -> IO ()
 putStrLnColor c s = do
-	setSGR [ SetColor Foreground Vivid c ]
+	setSGR [ SetColor Foreground Dull c ]
 	putStrLn s
 	setSGR [ Reset ]
 
@@ -161,15 +211,23 @@ parseFile l = parseFile' l []
 parseFile' :: [String] -> [Project] -> [Project]
 parseFile' [] l = l
 parseFile' (x:xs) l
-	| (length x == 0) = parseFile' xs l
-	| ((x !! 0) == '*') = parseFile' xs $ l ++ [(x, [])]
-	| otherwise = parseFile' xs $ (init l) ++ [addTaskTo (last l) x]
-	where addTaskTo (name, tasks) x = (name, tasks ++ [x])
+	| (length x == 0) = parseFile' xs l --Blank
+	| ((x !! 0) == '*') = parseFile' xs $ l ++ [(x, [])] --Project
+	| ((x !! 0) == '^') = parseFile' xs $ (init l) ++ [addTaskTo (last l) x True] --Priorty
+	| otherwise = parseFile' xs $ (init l) ++ [addTaskTo (last l) x False] -- Regular Task
+	where 
+		addTaskTo (name, tasks) x pri = (name, tasks ++ [(x, pri)])
 
 flattenProjects :: [Project] -> [String]
 --TODO For some reason, I didn't have to add a newline after name, not sure why...
 flattenProjects projects = map (\(name, tasks) -> name ++ (flattenTasks tasks)) $ sortProjects (clearBlanks projects)
-	where flattenTasks tasks = foldl (\a b -> a ++ "\n" ++ b) "" tasks
+	where 
+		flattenTasks tasks = foldl (\a b -> a ++ "\n" ++ (flattenSingle b)) "" $ tasks
+		flattenSingle (task, True) = 
+			if((task !! 0) == '^')
+				then task
+				else '^':task
+		flattenSingle (task, False) = task
 
 sortProjects :: [Project] -> [Project]
 sortProjects projects = sortBy compareProjects projects

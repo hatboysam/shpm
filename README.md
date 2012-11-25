@@ -21,6 +21,10 @@ shpm add "Some Task" -> add "Some Task" to project "Other"
 
 shpm add "Some Project" "Some Task" -> add "Some Task" to the project "Some Project", creating the project if necessary
 
+shpm pri n -> Prioritize task #n (prints in different color)
+
+shpm addp -> same options/arguments as 'add', but prioritized the new task
+
 shpm remove -> list all tasks and choose one to remove
 
 shpm remove n -> remove task #n from the list
