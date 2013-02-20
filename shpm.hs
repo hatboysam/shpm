@@ -1,4 +1,5 @@
 import Control.Monad
+import Data.Maybe
 import qualified Control.Exception as E
 import System.IO
 import System.Environment
@@ -80,6 +81,9 @@ remove (toRemove:_) = do
 	let toRemoveNum = read toRemove :: Int
 	projects <- getProjects
 	let maxNum = maxTaskNum projects
+	let removedTask = findTask projects toRemoveNum
+	let printRemoved = when (removedTask /= Nothing) (putStrLn ("Removed: " ++ (fst (fromJust removedTask))))
+	when (toRemoveNum >= 0) printRemoved
 	if (toRemoveNum >= maxNum || toRemoveNum < 0)
 		then putStrLn $ "Out of bounds: " ++ toRemove
 		else replaceFile (flattenProjects $ removeTask projects toRemoveNum)
@@ -91,7 +95,14 @@ removeTask :: [Project] -> Int -> [Project]
 removeTask (x:xs) num
 	| num < numTasks x = (deleteTask num x):xs
 	| otherwise = x:(removeTask xs (num - numTasks x))
-	where deleteTask num (name,tasks) = (name, (delete (tasks !! num) tasks)) 
+	where deleteTask num (name,tasks) = (name, (delete (tasks !! num) tasks))
+
+findTask :: [Project] -> Int -> Maybe Task
+findTask (x:xs) num
+	| num < numTasks x = Just (extract num x)
+	| otherwise = (findTask xs (num - numTasks x))
+	where extract n (name,tasks) = (tasks !! n)
+findTask [] _ = Nothing
 
 priTask :: [Project] -> Int -> [Project]
 priTask (x:xs) num
